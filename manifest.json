@@ -1,0 +1,12 @@
+{
+   "name": "FakeSticker",
+   "version": "1.0.0",
+   "description": "Allows you to send stickers without Nitro",
+   "authors": [
+      {
+         "name": "mafu",
+         "id": "519760564755365888"
+      }
+   ],
+   "color": "#556b2f"
+}
