@@ -1,7 +1,7 @@
 import {Plugin, registerPlugin} from 'enmity/managers/plugins'
 import {Constants, React, Toasts} from 'enmity/metro/common'
 import {create} from 'enmity/patcher'
-import {bulk, filters} from "enmity/metro"
+import {bulk, filters, getByProps} from "enmity/metro"
 import {getIDByName} from "enmity/api/assets"
 // @ts-ignore
 import manifest, {name as plugin_name} from '../manifest.json'
@@ -10,20 +10,20 @@ import Settings from "./components/Settings"
 const Patcher = create('FakeSticker')
 
 const [
-    PermStat,
     PermStat2,
     StickerStore,
     ChannelStore,
     MessageStore,
     Permissions
 ] = bulk(
-    filters.byProps("canUseStickersEverywhere"),
     filters.byProps("isSendableSticker"),
     filters.byProps("getPremiumPacks", "getAllGuildStickers", "getStickerById"),
     filters.byProps("getChannel"),
     filters.byProps("sendMessage", "sendStickers"),
     filters.byProps('getChannelPermissions'),
 )
+
+const PermStat = getByProps("canUseStickersEverywhere", {defaultExport: false});
 
 const LoadingIcon = getIDByName('ic_clock')
 const FailIcon = getIDByName('Small')
@@ -52,7 +52,11 @@ const FakeSticker: Plugin = {
             }
         }
 
-        Patcher.instead(PermStat, "canUseStickersEverywhere", (_, args, org) => {
+        if (Object.isFrozen(PermStat.default)) {
+            PermStat.default = {...PermStat.default}
+        }
+
+        Patcher.instead(PermStat.default, "canUseStickersEverywhere", (_, args, org) => {
             return true
         })
         Patcher.after(PermStat2, "isSendableSticker", (_, args, org) => {
