@@ -31,25 +31,47 @@ const FailIcon = getIDByName('Small')
 const FakeSticker: Plugin = {
     ...manifest,
     onStart() {
-        async function sendApngSticker(stickerId, channelId) {
+        async function sendAnimatedSticker(stickerLink, channelId) {
             Toasts.open({
-                content: "Processing A Sticker...",
+                content: "Processing Sticker...",
                 source: LoadingIcon
             })
-            let response = await fetch(`https://fakesticker.m4fn3.repl.co/apng?id=${stickerId}&size=160`, {
-                method: "GET"
+
+            // upload gif
+            let form = new FormData()
+            form.append('new-image-url', stickerLink)
+            let response = await fetch(`https://ezgif.com/apng-to-gif`, {
+                method: "POST",
+                body: form
             })
-            if (response.status === 200) {
-                let res = await response.json()
-                MessageStore.sendMessage(
-                    channelId, {content: res.url}
-                )
-            } else {
-                Toasts.open({
-                    content: "Something went wrong while processing a sticker.",
-                    source: FailIcon
-                })
-            }
+            let file_id = response.url.split("/").pop()
+
+            // convert apng to gif
+            form = new FormData()
+            form.append('file', file_id)
+            response = await fetch(`https://ezgif.com/apng-to-gif/${file_id}?ajax=true`, {
+                method: "POST",
+                body: form
+            })
+            let content = await response.text()
+            let gif_url = `https:${content.split("<img src=\"")[1].split("\" style=")[0]}`
+            file_id = gif_url.split("/").pop()
+
+            // resize gif
+            form = new FormData()
+            form.append('file', `${file_id}`)
+            form.append('height', `160`)
+            response = await fetch(`https://ezgif.com/resize/${file_id}?ajax=true`, {
+                method: "POST",
+                body: form
+            })
+            content = await response.text()
+            gif_url = `https:${content.split("<img src=\"")[1].split("\" style=")[0]}`
+
+            // send gif
+            MessageStore.sendMessage(
+                channelId, {content: gif_url}
+            )
         }
 
         if (Object.isFrozen(PermStat.default)) {
@@ -74,12 +96,13 @@ const FakeSticker: Plugin = {
                     source: FailIcon
                 })
             } else {
+                const stickerLink = `https://media.discordapp.net/stickers/${sticker.id}.png`
                 if (sticker.format_type === 1) { // png
                     return MessageStore.sendMessage(
-                        channel.id, {content: `https://media.discordapp.net/stickers/${sticker.id}.png?size=160`}
+                        channel.id, {content: `${stickerLink}?size=160`}
                     )
                 } else if (sticker.format_type === 2) { // apng
-                    sendApngSticker(sticker.id, channel.id).then()
+                    sendAnimatedSticker(stickerLink, channel.id).then()
                 } else if (sticker.format_type === 3) { // lottie
                     return MessageStore.sendMessage(
                         channel.id, {content: `https://raw.githubusercontent.com/m4fn3/RawStickers/master/${sticker.pack_id}/${sticker.id}.gif`}
