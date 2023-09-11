@@ -33,9 +33,10 @@ const FakeSticker: Plugin = {
     onStart() {
         async function sendAnimatedSticker(stickerLink, channelId) {
             Toasts.open({
-                content: "Processing Sticker...",
-                source: LoadingIcon
-            })
+                key: "TOAST",
+                content: `Processing Sticker...`,
+                icon: LoadingIcon
+            });
 
             // upload gif
             let form = new FormData()
